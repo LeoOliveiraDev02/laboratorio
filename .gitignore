@@ -1,0 +1,33 @@
+# Dependencias e builds
+node_modules/
+dist/
+
+# Segredos (cada pasta tem seu .env.example)
+.env
+.env.*
+!.env.example
+
+# Bancos locais
+*.sqlite
+*.sqlite3
+*.db
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+*.db-wal
+*.db-shm
+
+# Logs
+logs/
+*.log
+
+# Uploads de usuarios
+agrostand-backend/public/uploads/*
+!agrostand-backend/public/uploads/.gitkeep
+
+# IDE / SO
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
