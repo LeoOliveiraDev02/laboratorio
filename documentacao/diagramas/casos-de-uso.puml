@@ -1,0 +1,174 @@
+@startuml casos-de-uso
+' Sistema Marketplace Agrícola — Diagrama de Casos de Uso (versão 3, 14/10/2026)
+' Numeração (UCn) igual à do documento CASOS_DE_USO_EXPANDIDO_Marketplace-3.docx
+!pragma layout smetana
+left to right direction
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F1F1F1
+  BorderColor #555555
+}
+skinparam note {
+  BackgroundColor #FEFFDD
+  BorderColor #555555
+}
+title Sistema Marketplace Agrícola - Diagrama de Casos de Uso
+
+actor "Cliente" as Cliente
+actor "Anunciante\n(produtor)" as Anunciante
+actor "Administrador" as Admin
+Cliente <|-- Anunciante
+
+actor "Google Identity" as Google <<sistema>>
+actor "Serviço de e-mail\n(SMTP)" as Email <<sistema>>
+actor "WhatsApp" as WhatsApp <<sistema>>
+actor "Nominatim /\nOpenStreetMap" as OSM <<sistema>>
+
+rectangle "Sistema Marketplace Agrícola" {
+
+  package "Conta e acesso" {
+    usecase "UC1 Cadastrar-se" as UC1
+    usecase "UC12 Autenticar-se\n(login)" as UC12
+    usecase "UC13 Encerrar sessão\n(logout)" as UC13
+    usecase "UC15 Recuperar senha" as UC15
+    usecase "UC16 Entrar com Google" as UC16
+    usecase "UC8 Gerenciar dados\npessoais" as UC8
+    usecase "UC6 Gerenciar endereços" as UC6
+    usecase "UC14 Excluir conta" as UC14
+    usecase "UC29 Consultar\nnotificações" as UC29
+  }
+
+  package "Catálogo" {
+    usecase "UC9 Navegar por anúncios\n(filtros, ordenação,\nperto de mim)" as UC9
+    usecase "UC5 Pesquisar produtos" as UC5
+    usecase "UC3 Visualizar anúncio" as UC3
+    usecase "UC27 Visualizar perfil\ndo produtor" as UCPERFIL
+    usecase "UC10 Favoritar /\nDesfavoritar anúncio" as UC10
+    usecase "UC11 Visualizar Meus\nFavoritos" as UC11
+  }
+
+  package "Compras e pós-venda" {
+    usecase "UC17 Gerenciar carrinho" as UC17
+    usecase "UC18 Finalizar compra\n(checkout)" as UC18
+    usecase "UC19 Acompanhar pedidos" as UC19
+    usecase "UC21 Avaliar produto" as UC21
+    usecase "UC24 Abrir reclamação\n(devolução / mediação)" as UC24
+    usecase "UC25 Solicitar cotação\nde atacado" as UC25
+    usecase "UC26 Assinar cesta" as UCCESTA
+  }
+
+  package "Comunicação" {
+    usecase "UC4 Contatar vendedor\n(WhatsApp)" as UC4
+    usecase "UC22 Perguntar e responder\nno anúncio" as UC22
+    usecase "UC23 Conversar pelo chat" as UC23
+  }
+
+  package "Vendas (Anunciante)" {
+    usecase "UC2 Anunciar produto" as UC2
+    usecase "UC7 Gerenciar produtos\n(editar, pausar, lixeira,\nrestaurar)" as UC7
+    usecase "UC20 Gerenciar vendas" as UC20
+    usecase "UC28 Solicitar verificação\nde produtor" as UC28
+    usecase "UC30 Visualizar estatísticas\nde vendas" as UC30
+  }
+
+  package "Administração" {
+    usecase "UC31 Administrar a plataforma\n(verificações e mediações)" as UC31
+  }
+}
+
+' ── Cliente ──
+Cliente --> UC1
+Cliente --> UC12
+Cliente --> UC15
+Cliente --> UC16
+Cliente --> UC8
+Cliente --> UC6
+Cliente --> UC14
+Cliente --> UC29
+Cliente --> UC9
+Cliente --> UC5
+Cliente --> UC10
+Cliente --> UC11
+Cliente --> UCPERFIL
+Cliente --> UC17
+Cliente --> UC18
+Cliente --> UC19
+Cliente --> UC21
+Cliente --> UC24
+Cliente --> UC25
+Cliente --> UCCESTA
+Cliente --> UC4
+Cliente --> UC22
+Cliente --> UC23
+
+' ── Anunciante (herda os de Cliente) ──
+Anunciante --> UC2
+Anunciante --> UC7
+Anunciante --> UC20
+Anunciante --> UC28
+Anunciante --> UC30
+
+' ── Administrador ──
+Admin --> UC12
+Admin --> UC31
+
+' ── Sistemas externos ──
+UC16 --> Google
+UC15 --> Email
+UC29 ..> Email : opcional
+UC4 --> WhatsApp
+UC6 --> OSM
+UC1 --> OSM
+
+' ── include / extend ──
+UC4 ..> UC3 : <<include>>
+UC10 ..> UC3 : <<extend>>
+UC11 ..> UC3 : <<include>>
+UC22 ..> UC3 : <<extend>>
+UC23 ..> UC3 : <<extend>>
+UC25 ..> UC3 : <<extend>>
+UC17 ..> UC3 : <<extend>>
+UC18 ..> UC17 : <<include>>
+UC21 ..> UC19 : <<extend>>
+UC24 ..> UC19 : <<extend>>
+UC13 ..> UC12 : <<extend>>
+UC15 ..> UC12 : <<extend>>
+UC2 ..> UC6 : <<extend>>\n(novo endereço)
+
+note right of UC3
+  Ponto de extensão: favoritar, perguntar,
+  conversar, cotar e adicionar ao carrinho
+  exigem Cliente autenticado (RN17).
+end note
+
+note right of UC18
+  Um pedido por produtor (RN25).
+  Frete por tabela (RN26).
+  Pagamento simulado (RN07).
+end note
+
+note right of UC12
+  RN19: após 3 tentativas inválidas,
+  bloqueio de 15 minutos.
+  Sessão JWT de 24 h.
+end note
+
+note right of UC14
+  RN20: confirmação digitando EXCLUIR;
+  exclusão definitiva em cascata (LGPD, RS03).
+end note
+
+note bottom of Anunciante
+  Generalização de ator (RN01): o Anunciante
+  herda todos os casos de uso do Cliente.
+  Qualquer cliente torna-se anunciante ao
+  publicar o primeiro anúncio.
+end note
+
+note bottom of Admin
+  RN39: administradores definidos
+  por configuração (ADMIN_EMAILS).
+end note
+@enduml

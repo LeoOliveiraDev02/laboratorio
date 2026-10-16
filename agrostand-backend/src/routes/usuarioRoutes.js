@@ -13,6 +13,8 @@ const UsuarioController = require('../controllers/UsuarioController');
 
 // Importa o middleware de autenticação.
 const authMiddleware = require('../middlewares/authMiddleware');
+const ReputacaoController = require('../controllers/ReputacaoController');
+const upload = require('../config/multer');
 
 // Cria uma nova instância de roteador do Express.
 const router = express.Router();
@@ -34,6 +36,11 @@ router.get('/profile', UsuarioController.getProfile);
  * Mapeamento: UsuarioController.updateProfile
  */
 router.put('/profile', UsuarioController.updateProfile);
+
+// Perfil público do produtor (apresentação, vídeo e foto)
+router.get('/profile/public', ReputacaoController.meuPerfilPublico);
+router.put('/profile/public', ReputacaoController.atualizarPerfilPublico);
+router.post('/profile/photo', upload.single('foto'), ReputacaoController.atualizarFoto);
 
 /**
  * Rota: PUT /password

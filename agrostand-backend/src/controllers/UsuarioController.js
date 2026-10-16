@@ -4,6 +4,7 @@
  * exclusão definitiva (LGPD) em cascata no DAO.
  */
 
+const adminMiddleware = require('../middlewares/adminMiddleware');
 const UsuarioService = require('../services/UsuarioService');
 
 class UsuarioController {
@@ -16,7 +17,7 @@ class UsuarioController {
       return res.status(200).json({
         status: 'success',
         data: {
-          usuario: req.user
+          usuario: { ...req.user, is_admin: adminMiddleware.isAdmin(req.user) }
         }
       });
     } catch (error) {

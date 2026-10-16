@@ -51,11 +51,12 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
 type Query = Record<string, string | number | null | undefined>;
 
 type RequestOptions = {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   query?: Query;
   /** Objeto (enviado como JSON) ou FormData (multipart, para uploads via Multer). */
   body?: unknown;
-  auth?: boolean;
+  /** true = exige login; 'optional' = envia o token se houver (rotas públicas que personalizam). */
+  auth?: boolean | 'optional';
 };
 
 function buildUrl(path: string, query?: Query): string {
@@ -88,7 +89,9 @@ export async function request<T = undefined>(
   }
 
   const token = tokenStorage.get();
-  if (auth) {
+  if (auth === 'optional') {
+    if (token) headers.Authorization = `Bearer ${token}`;
+  } else if (auth) {
     if (!token) throw new ApiError(401, 'Acesso negado. Token não fornecido.');
     headers.Authorization = `Bearer ${token}`;
   }
@@ -108,7 +111,7 @@ export async function request<T = undefined>(
   }
 
   if (!response.ok || !envelope || envelope.status !== 'success') {
-    if (response.status === 401 && auth) {
+    if (response.status === 401 && auth === true) {
       tokenStorage.clear();
       onUnauthorized?.();
     }

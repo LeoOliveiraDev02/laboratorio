@@ -104,6 +104,7 @@ O servidor será iniciado na porta especificada (padrão `3000`). Você verá a 
 ```bash
 npm run db:generate  # gera SQL em ./drizzle a partir de src/db/schema.js
 npm run db:studio    # abre o Drizzle Studio
+npm run db:seed      # anúncios de demonstração por categoria (vendedor produtor.demo@agrostand.com / Demo@1234)
 ```
 > O boot (`initializeDatabase`) cria o banco e o role da API se faltarem, aplica `src/db/schema.sql`
 > (tabelas `IF NOT EXISTS`, índices e policies RLS), concede permissões e popula as categorias padrão.
@@ -181,6 +182,20 @@ não toca no banco nem em `public/uploads` de dev. `rls.test.js` prova o isolame
 * `POST /api/favorites/toggle` - Liga/desliga o favorito de um anúncio (requer JWT; só ATIVOS)
 * `GET /api/favorites` - Meus Favoritos, recentes primeiro, indisponíveis sinalizados (requer JWT)
 * `DELETE /api/favorites/:id` - Remove um favorito da lista (requer JWT, só os próprios)
+
+### Marketplace (ambiente de teste)
+Pagamento é **simulado** (nenhuma cobrança real) e o frete é uma **estimativa por tabela** (mesma cidade / mesmo estado / outro estado + peso; grátis acima de R$ 500).
+
+* **Vitrine**: `GET /api/ads` aceita `precoMin`, `precoMax`, `uf`, `cidade`, `zona`, `ofertas=true`, `anuncianteId`, `lat`/`lng`/`raioKm`, `excluir` e `sort` (`recentes`, `menor_preco`, `maior_preco`, `mais_avaliados`, `proximos`). `GET /api/ads/suggest?q=` (sugestões), `GET /api/ads/:id/recommendations`, `POST /api/ads/:id/events` (visita/clique no WhatsApp), `GET /api/ads/me/stats`, `PATCH /api/ads/:id/status` (pausar/reativar). O anúncio ganhou unidade, estoque, peso, preço promocional, atacado, certificações e entrega/retirada.
+* **Pedidos**: `POST /api/orders/quote`, `POST /api/orders/checkout` (um pedido por produtor), `GET /api/orders`, `GET /api/orders/sales`, `GET /api/orders/:id`, `PATCH /api/orders/:id/status` (pagar simulado, preparar, enviar com rastreio, retirada, entregue, cancelar).
+* **Notificações**: `GET /api/notifications`, `POST /api/notifications/:id/read`, `POST /api/notifications/read-all` (também por e-mail com `NOTIFY_EMAIL=on`).
+* **Reputação**: `/api/reviews` (avaliação com até 3 fotos, só após entrega), `/api/questions` (perguntas e respostas), `GET /api/producers/:id` (página pública + termômetro), `/api/users/profile/public` e `/api/users/profile/photo`, `/api/verification` (CPF/CNPJ/CAR).
+* **Comunicação e pós-venda**: `/api/chats` (chat interno), `/api/claims` (reclamação, devolução e pedido de mediação).
+* **Comércio**: `/api/quotes` (cotação de atacado), `/api/baskets` e `/api/subscriptions` (cestas por assinatura).
+* **Administração** (e-mails em `ADMIN_EMAILS`): `/api/admin/verifications` e `/api/admin/claims`.
+* **Compartilhamento**: `GET /share/produto/:id` e `/share/produtor/:id` (prévia Open Graph para o WhatsApp; só funciona com URL pública).
+
+Variáveis novas no `.env`: `GEOCODER=nominatim` (coordenadas via OpenStreetMap), `ADMIN_EMAILS`, `FRONTEND_URL`, `NOTIFY_EMAIL`. Scripts: `npm run db:seed` (também cria `cliente.demo@agrostand.com / Cliente@1234` e `admin.demo@agrostand.com / Admin@1234`) e `npm run db:geocode`.
 
 ---
 

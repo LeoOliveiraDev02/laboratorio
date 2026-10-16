@@ -9,6 +9,8 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "db:seed": "node src/db/seed.js",
+    "db:geocode": "node src/db/geocode.js",
     "test": "node --test \"test/unit/*.test.js\" \"test/integration/*.test.js\"",
     "test:unit": "node --test \"test/unit/*.test.js\"",
     "test:integration": "node --test \"test/integration/*.test.js\""

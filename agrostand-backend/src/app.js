@@ -60,6 +60,9 @@ app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 // Todas as rotas da API começarão com o prefixo '/api' (Ex: /api/users, /api/ads)
 app.use('/api', apiRoutes);
 
+// Links de compartilhamento com prévia (Open Graph) para WhatsApp e redes sociais
+app.use('/share', require('./routes/shareRoutes'));
+
 // Rota raiz (welcome route) para verificar se a API está online e dar as boas-vindas
 app.get('/', (req, res) => {
   res.json({

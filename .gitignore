@@ -31,3 +31,7 @@ agrostand-backend/public/uploads/*
 Thumbs.db
 .idea/
 .vscode/
+
+# Ferramentas locais do Android (JDK/SDK baixados para gerar o APK)
+.android-tools/
+*.apk

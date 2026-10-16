@@ -147,6 +147,49 @@ async function sendRecoveryEmail(toEmail, recoveryCode) {
   }
 }
 
+function escaparHtml(texto) {
+  return String(texto ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/**
+ * Notificação transacional (pedido, mensagem, pergunta...). Mesmos três níveis
+ * de transporte da recuperação de senha; `link` aponta para o front.
+ */
+async function sendNotificationEmail(toEmail, { titulo, mensagem, link }) {
+  const url = link ? `${(process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '')}${link}` : null;
+  const mailOptions = {
+    from: process.env.SMTP_FROM || 'no-reply@agrostand.com',
+    to: toEmail,
+    subject: `${titulo} - AgroMundo`,
+    text: `${titulo}
+
+${mensagem || ''}${url ? `
+
+Acesse: ${url}` : ''}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #E8E5DF; border-radius: 8px;">
+        <h2 style="color: #F4770B; margin-top: 0;">AgroMundo</h2>
+        <h3 style="color: #252522;">${escaparHtml(titulo)}</h3>
+        <p style="color: #444;">${escaparHtml(mensagem)}</p>
+        ${url ? `<p><a href="${escaparHtml(url)}" style="background:#F4770B;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;">Ver no AgroMundo</a></p>` : ''}
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+        <p style="font-size: 12px; color: #999;">Você recebeu este e-mail porque tem uma conta no AgroMundo.</p>
+      </div>
+    `,
+  };
+
+  const activeTransporter = await getTransporter();
+  if (activeTransporter && activeTransporter !== 'console') {
+    const info = await activeTransporter.sendMail(mailOptions);
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    if (previewUrl) console.log(`[SMTP TEST] Notificação para ${toEmail}. Preview URL: ${previewUrl}`);
+    return true;
+  }
+  console.log(`[SMTP FALLBACK] Notificação para ${toEmail}: ${titulo} — ${mensagem || ''}${url ? ` (${url})` : ''}`);
+  return true;
+}
+
 module.exports = {
-  sendRecoveryEmail
+  sendRecoveryEmail,
+  sendNotificationEmail,
 };

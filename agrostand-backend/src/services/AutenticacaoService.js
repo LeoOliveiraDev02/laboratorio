@@ -19,6 +19,7 @@ const { OAuth2Client } = require('google-auth-library');
 
 const UsuarioDAO = require('../dao/UsuarioDAO');
 const EnderecoDAO = require('../dao/EnderecoDAO');
+const GeocodificacaoService = require('./GeocodificacaoService');
 const RecuperacaoSenhaDAO = require('../dao/RecuperacaoSenhaDAO');
 const BloqueioLoginDAO = require('../dao/BloqueioLoginDAO');
 const TokenRevogadoDAO = require('../dao/TokenRevogadoDAO');
@@ -149,6 +150,7 @@ class AutenticacaoService {
     const token = signToken(clienteId, email);
 
     logger.audit('Novo usuário cadastrado com sucesso', { userId: clienteId, email, ip });
+    GeocodificacaoService.agendarPendentes(clienteId);
 
     return {
       token,

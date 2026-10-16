@@ -1,0 +1,288 @@
+@startuml classes-2-comercio
+' Sistema Marketplace Agrícola — Diagrama de Classes (Model), parte 2: comércio,
+' pós-venda e comunicação. Versão 3 (14/10/2026), conforme src/domain e src/db/schema.sql
+!pragma layout smetana
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam note {
+  BackgroundColor #FEFFDD
+  BorderColor #555555
+}
+title Sistema Marketplace Agrícola - Diagrama de Classes (Model) - Parte 2: Comércio, pós-venda e comunicação
+
+class Usuario <<da Parte 1>>
+class Anuncio <<da Parte 1>>
+class Endereco <<da Parte 1>>
+
+class Pedido {
+  -id : int NOT NULL
+  -status : StatusPedido NOT NULL
+  -tipoEntrega : TipoEntrega NOT NULL
+  -formaPagamento : FormaPagamento NOT NULL
+  -enderecoEntrega : rua, número, bairro, CEP, cidade, UF
+  -subtotal : double NOT NULL
+  -frete : double NOT NULL
+  -total : double NOT NULL
+  -codigoRastreio : String
+  -observacao : String
+  -origem : OrigemPedido NOT NULL
+  -dataCriacao : Date NOT NULL
+  -dataAtualizacao : Date NOT NULL
+  +papelDe(usuarioId: int) : Papel
+  +proximosStatus(papel: Papel) : List<StatusPedido>
+  +transicionar(destino: StatusPedido, papel: Papel) : void
+}
+
+class ItemPedido {
+  -id : int NOT NULL
+  -nome : String NOT NULL
+  -unidade : String NOT NULL
+  -precoUnitario : double NOT NULL
+  -quantidade : int NOT NULL
+  -imagemUrl : String
+}
+
+class HistoricoPedido {
+  -id : int NOT NULL
+  -status : StatusPedido NOT NULL
+  -observacao : String
+  -data : Date NOT NULL
+}
+
+class Avaliacao {
+  -id : int NOT NULL
+  -nota : int NOT NULL
+  -comentario : String
+  -respostaVendedor : String
+  -data : Date NOT NULL
+}
+
+class AvaliacaoFoto {
+  -id : int NOT NULL
+  -url : String NOT NULL
+}
+
+class Reclamacao {
+  -id : int NOT NULL
+  -motivo : MotivoReclamacao NOT NULL
+  -descricao : String NOT NULL
+  -pedidoDevolucao : boolean NOT NULL
+  -status : StatusReclamacao NOT NULL
+  -respostaVendedor : String
+  -decisaoMediacao : String
+  -dataAbertura : Date NOT NULL
+}
+
+class Cotacao {
+  -id : int NOT NULL
+  -quantidade : int NOT NULL
+  -mensagem : String
+  -status : StatusCotacao NOT NULL
+  -precoUnitario : double
+  -prazoEntrega : String
+  -resposta : String
+  -dataCriacao : Date NOT NULL
+}
+
+class Cesta {
+  -id : int NOT NULL
+  -nome : String NOT NULL
+  -descricao : String NOT NULL
+  -itens : String NOT NULL
+  -preco : double NOT NULL
+  -frequencia : Frequencia NOT NULL
+  -imagemUrl : String
+  -ativa : boolean NOT NULL
+}
+
+class Assinatura {
+  -id : int NOT NULL
+  -status : StatusAssinatura NOT NULL
+  -tipoEntrega : TipoEntrega NOT NULL
+  -proximaEntrega : Date NOT NULL
+  -dataInicio : Date NOT NULL
+}
+
+class Pergunta {
+  -id : int NOT NULL
+  -texto : String NOT NULL
+  -resposta : String
+  -dataPergunta : Date NOT NULL
+  -dataResposta : Date
+}
+
+class Conversa {
+  -id : int NOT NULL
+  -dataAtualizacao : Date NOT NULL
+}
+
+class Mensagem {
+  -id : int NOT NULL
+  -texto : String NOT NULL
+  -lida : boolean NOT NULL
+  -data : Date NOT NULL
+}
+
+class Notificacao {
+  -id : int NOT NULL
+  -tipo : String NOT NULL
+  -titulo : String NOT NULL
+  -mensagem : String
+  -link : String
+  -lida : boolean NOT NULL
+  -data : Date NOT NULL
+}
+
+class Verificacao {
+  -id : int NOT NULL
+  -tipoDocumento : TipoDocumento NOT NULL
+  -documento : String NOT NULL
+  -car : String
+  -status : StatusVerificacao NOT NULL
+  -observacao : String
+  -dataEnvio : Date NOT NULL
+  -dataDecisao : Date
+}
+
+enum StatusPedido {
+  AGUARDANDO_PAGAMENTO
+  PAGO
+  EM_PREPARACAO
+  ENVIADO
+  PRONTO_RETIRADA
+  ENTREGUE
+  CANCELADO
+}
+
+enum TipoEntrega {
+  ENTREGA
+  RETIRADA
+}
+
+enum FormaPagamento {
+  PIX
+  CARTAO
+  BOLETO
+}
+
+enum OrigemPedido {
+  CARRINHO
+  COTACAO
+  ASSINATURA
+}
+
+enum StatusReclamacao {
+  ABERTA
+  RESPONDIDA
+  EM_MEDIACAO
+  RESOLVIDA_COMPRADOR
+  RESOLVIDA_VENDEDOR
+  ENCERRADA
+}
+
+enum MotivoReclamacao {
+  NAO_RECEBIDO
+  PRODUTO_DIFERENTE
+  PRODUTO_DANIFICADO
+  QUALIDADE
+  OUTRO
+}
+
+enum StatusCotacao {
+  PENDENTE
+  RESPONDIDA
+  ACEITA
+  RECUSADA
+  CANCELADA
+}
+
+enum Frequencia {
+  SEMANAL
+  QUINZENAL
+  MENSAL
+}
+
+enum StatusAssinatura {
+  ATIVA
+  PAUSADA
+  CANCELADA
+}
+
+enum StatusVerificacao {
+  PENDENTE
+  APROVADA
+  REJEITADA
+}
+
+enum TipoDocumento {
+  CPF
+  CNPJ
+}
+
+' ── Pedidos ──
+Usuario "1" -- "0..*" Pedido : compra\n(comprador)
+Usuario "1" -- "0..*" Pedido : vende\n(vendedor)
+Pedido "1" *-- "1..*" ItemPedido : contém
+ItemPedido "0..*" --> "0..1" Anuncio : refere-se a
+Pedido "1" *-- "1..*" HistoricoPedido : linha do tempo
+
+' ── Pós-venda ──
+Pedido "1" -- "0..*" Avaliacao : origina\n(RN28)
+Avaliacao "0..*" --> "1" Anuncio : avalia
+Avaliacao "1" *-- "0..3" AvaliacaoFoto
+Pedido "1" -- "0..1" Reclamacao : contestado por\n(RN30)
+
+' ── Comércio ──
+Cotacao "0..*" --> "1" Anuncio : sobre
+Usuario "1" -- "0..*" Cotacao : solicita
+Cotacao "0..1" --> "0..1" Pedido : gera\n(RN31)
+Usuario "1" o-- "0..*" Cesta : oferece
+Cesta "1" *-- "0..*" Assinatura : (RN32)
+Usuario "1" -- "0..*" Assinatura : assina
+Assinatura "0..*" --> "0..1" Endereco : entrega em
+
+' ── Comunicação ──
+Anuncio "1" *-- "0..*" Pergunta : (RN29)
+Usuario "1" -- "0..*" Pergunta : pergunta
+Conversa "0..*" --> "0..1" Anuncio : sobre
+Usuario "2" -- "0..*" Conversa : participa\n(comprador, vendedor)
+Conversa "1" *-- "0..*" Mensagem
+Usuario "1" *-- "0..*" Notificacao : recebe\n(RN38)
+Usuario "1" -- "0..1" Verificacao : solicita\n(RN34)
+
+Pedido ..> StatusPedido
+Pedido ..> TipoEntrega
+Pedido ..> FormaPagamento
+Pedido ..> OrigemPedido
+Reclamacao ..> StatusReclamacao
+Reclamacao ..> MotivoReclamacao
+Cotacao ..> StatusCotacao
+Cesta ..> Frequencia
+Assinatura ..> StatusAssinatura
+Verificacao ..> StatusVerificacao
+Verificacao ..> TipoDocumento
+
+note right of Pedido
+  RN25: um pedido por vendedor no checkout;
+  itens guardam nome e preço da compra.
+  RN26: frete por tabela; grátis >= R$ 500.
+  RN27: máquina de estados —
+  AGUARDANDO_PAGAMENTO → PAGO → EM_PREPARACAO
+  → ENVIADO | PRONTO_RETIRADA → ENTREGUE;
+  CANCELADO conforme o papel.
+  RN07: pagamento simulado.
+end note
+
+note bottom of Avaliacao
+  RN28: só o comprador, após ENTREGUE;
+  UNIQUE(pedido_id, anuncio_id); nota 1–5;
+  até 3 fotos; vendedor responde uma vez.
+end note
+
+note bottom of Verificacao
+  RN34: CPF/CNPJ com dígitos válidos;
+  CAR opcional; uma por usuário;
+  decidida por administrador (RN39).
+end note
+@enduml

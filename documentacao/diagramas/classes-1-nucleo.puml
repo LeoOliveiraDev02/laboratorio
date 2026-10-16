@@ -1,0 +1,245 @@
+@startuml classes-1-nucleo
+' Sistema Marketplace Agrícola — Diagrama de Classes (Model), parte 1: núcleo
+' Versão 3 (14/10/2026), conforme agrostand-backend/src/domain e src/db/schema.sql
+!pragma layout smetana
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam note {
+  BackgroundColor #FEFFDD
+  BorderColor #555555
+}
+title Sistema Marketplace Agrícola - Diagrama de Classes (Model) - Parte 1: Núcleo
+
+abstract class Usuario {
+  -id : int NOT NULL
+  -nome : String NOT NULL
+  -sobrenome : String NOT NULL
+  -email : String NOT NULL <<unique>>
+  -telefone : String NOT NULL
+  -senhaHash : String NOT NULL
+  -dataCadastro : Date NOT NULL
+  -fotoUrl : String
+  -bio : String
+  -videoUrl : String
+  +autenticar(email: String, senha: String) : boolean
+  +atualizarDados(novosDados) : void
+}
+
+class Cliente {
+  +pesquisarAnuncios(termo: String) : List<Anuncio>
+  +navegarPorAnuncios(filtros) : List<Anuncio>
+  +visualizarAnuncio(id: int) : Anuncio
+  +contatarVendedor(anuncio: Anuncio) : void
+  +cadastrarEndereco(e: Endereco) : void
+}
+
+class Anunciante {
+  +publicarAnuncio(a: Anuncio) : void
+  +editarAnuncio(a: Anuncio) : void
+  +pausarAnuncio(id: int) : void
+  +removerAnuncio(id: int) : void
+  +restaurarAnuncio(id: int) : void
+  +gerenciarMeusProdutos() : List<Anuncio>
+}
+
+class Endereco {
+  -id : int NOT NULL
+  -rua : String NOT NULL
+  -numero : String NOT NULL
+  -bairro : String NOT NULL
+  -cep : String
+  -cidade : String NOT NULL
+  -uf : String NOT NULL
+  -zona : Zona NOT NULL
+  -latitude : double
+  -longitude : double
+  +validar() : boolean
+}
+
+class Categoria {
+  -id : int NOT NULL
+  -nome : String NOT NULL <<unique>>
+  -descricao : String
+}
+
+class Anuncio {
+  -id : int NOT NULL
+  -dataPublicacao : Date NOT NULL
+  -status : StatusAnuncio NOT NULL
+  -dataRemocao : Date
+  -unidade : Unidade NOT NULL
+  -estoque : int
+  -pesoKg : double
+  -precoPromocional : double
+  -promocaoAte : Date
+  -permiteEntrega : boolean NOT NULL
+  -permiteRetirada : boolean NOT NULL
+  +publicar() : void
+  +editar(novosDados) : void
+  +moverParaLixeira() : void
+  +restaurar() : void
+  +validar() : boolean
+}
+
+class Produto {
+  -id : int NOT NULL
+  -nome : String NOT NULL
+  -descricao : String NOT NULL
+  -preco : double NOT NULL
+}
+
+class Imagem {
+  -id : int NOT NULL
+  -url : String NOT NULL
+  -tipo : TipoImagem NOT NULL
+  -ordem : int NOT NULL
+}
+
+class PrecoAtacado {
+  -id : int NOT NULL
+  -quantidadeMinima : int NOT NULL
+  -preco : double NOT NULL
+}
+
+class Certificacao {
+  -id : int NOT NULL
+  -tipo : TipoCertificacao NOT NULL
+  -numero : String
+}
+
+class EventoAnuncio {
+  -id : int NOT NULL
+  -tipo : TipoEvento NOT NULL
+  -sessao : String
+  -data : Date NOT NULL
+}
+
+class Favorito {
+  -id : int NOT NULL
+  -dataFavorito : Date NOT NULL
+  +validar() : boolean
+}
+
+class BloqueioLogin {
+  -email : String NOT NULL
+  -tentativas : int NOT NULL
+  -bloqueadoAte : Date
+  +bloqueado() : boolean
+  +registrarFalha(limite: int, minutos: int) : void
+  +resetar() : void
+}
+
+class RecuperacaoSenha {
+  -id : int NOT NULL
+  -codigo : String NOT NULL
+  -expiraEm : Date NOT NULL
+  -usado : boolean NOT NULL
+}
+
+class TokenRevogado {
+  -id : int NOT NULL
+  -tokenHash : String NOT NULL <<unique>>
+  -expiraEm : Date NOT NULL
+}
+
+enum Zona {
+  URBANA
+  RURAL
+}
+
+enum StatusAnuncio {
+  ATIVO
+  PAUSADO
+  EM_LIXEIRA
+  REMOVIDO
+}
+
+enum TipoImagem {
+  PRINCIPAL
+  SECUNDARIA
+}
+
+enum Unidade {
+  un
+  kg
+  g
+  dz
+  maco
+  bandeja
+  litro
+  saca
+  caixa
+  pe
+}
+
+enum TipoCertificacao {
+  ORGANICO
+  SIF
+  SIE
+  SIM
+  SISBI
+}
+
+enum TipoEvento {
+  VISUALIZACAO
+  CLIQUE_WHATSAPP
+}
+
+Usuario <|-- Cliente
+Cliente <|-- Anunciante
+
+Cliente "1" o-- "1..*" Endereco : possui
+Cliente "1" o-- "0..*" Favorito : favorita\n(RN17)
+Favorito "0..*" --> "1" Anuncio : referencia
+Anunciante "1" o-- "0..*" Anuncio : publica
+Anuncio "0..*" --> "1" Categoria : pertence a\n(RN05)
+Anuncio "0..*" --> "1" Endereco : localizado em\n(RN06)
+Anuncio "1" *-- "1" Produto : contém
+Anuncio "1" *-- "1..*" Imagem : contém\n(RN04, RN15)
+Anuncio "1" *-- "0..*" PrecoAtacado : faixas\n(RN24)
+Anuncio "1" *-- "0..*" Certificacao : declara
+Anuncio "1" *-- "0..*" EventoAnuncio : registra
+Usuario "1" *-- "0..*" RecuperacaoSenha : solicita\n(RN36)
+
+Anuncio ..> StatusAnuncio
+Anuncio ..> Unidade
+Imagem ..> TipoImagem
+Endereco ..> Zona
+Certificacao ..> TipoCertificacao
+EventoAnuncio ..> TipoEvento
+
+note left of Usuario
+  RN13: e-mail único (UNIQUE).
+  RN21: nome público = nome + sobrenome;
+  fotoUrl opcional (avatar padrão se ausente);
+  bio até 1.500 caracteres; vídeo YouTube/Vimeo.
+end note
+
+note right of Favorito
+  RN17: UNIQUE(cliente_id, anuncio_id).
+  Só anúncios ATIVOS podem ser favoritados;
+  favorito de anúncio inativo aparece
+  como indisponível.
+end note
+
+note bottom of Endereco
+  RN18: rua, número, bairro, cidade, UF e zona
+  obrigatórios nas duas zonas; CEP opcional.
+  Latitude/longitude por geocodificação (RS14).
+end note
+
+note bottom of BloqueioLogin
+  RN19: 3 falhas consecutivas →
+  bloqueio de 15 minutos.
+  TokenRevogado: logout (RS11).
+end note
+
+note right of Anuncio
+  RN11/RS09: EM_LIXEIRA pode ser restaurado;
+  excluído definitivamente após 30 dias.
+  RN22: PAUSADO fica fora da vitrine.
+  RN23/RN24: estoque NULL = sem controle;
+  promoção < preço; atacado a partir de 2 un.
+end note
+@enduml

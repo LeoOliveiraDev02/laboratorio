@@ -13,6 +13,7 @@ const AnuncioController = require('../controllers/AnuncioController');
 
 // Importa o middleware de autenticação JWT para proteger rotas administrativas e pessoais.
 const authMiddleware = require('../middlewares/authMiddleware');
+const optionalAuthMiddleware = require('../middlewares/optionalAuthMiddleware');
 
 // Importa a instância pré-configurada do Multer para lidar com upload de mídias/arquivos de imagem.
 const upload = require('../config/multer');
@@ -55,7 +56,16 @@ router.post('/cleanup', AnuncioController.triggerCleanup); // Pode ser acionado 
  * Descrição: Obtém detalhes detalhados de um anúncio específico com base no ID fornecido na URL.
  * Mapeamento: AnuncioController.get
  */
+// Sugestões da busca (antes de /:id para não colidir)
+router.get('/suggest', AnuncioController.suggest);
+
 router.get('/:id', AnuncioController.get);
+
+// "Quem viu também viu" (público)
+router.get('/:id/recommendations', AnuncioController.recomendacoes);
+
+// Visualização / clique no WhatsApp: público, identifica o usuário se houver token
+router.post('/:id/events', optionalAuthMiddleware, AnuncioController.registrarEvento);
 
 // ==========================================
 // ROTAS PROTEGIDAS (Exigem Token JWT Válido)
@@ -70,6 +80,9 @@ router.use(authMiddleware);
  * Mapeamento: AnuncioController.myProducts
  */
 router.get('/me/products', AnuncioController.myProducts);
+
+// Estatísticas do painel do vendedor (visitas e cliques)
+router.get('/me/stats', AnuncioController.estatisticas);
 
 /**
  * Rota: POST /
@@ -102,6 +115,9 @@ router.delete('/:id', AnuncioController.delete);
  * Mapeamento: AnuncioController.restore
  */
 router.post('/:id/restore', AnuncioController.restore);
+
+// Pausar / reativar sem mandar para a lixeira
+router.patch('/:id/status', AnuncioController.alterarStatus);
 
 // Exporta o roteador configurado para ser incorporado no index de rotas.
 module.exports = router;
