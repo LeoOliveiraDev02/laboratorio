@@ -64,7 +64,9 @@ app.use('/api', apiRoutes);
 app.use('/share', require('./routes/shareRoutes'));
 
 // Rota raiz (welcome route) para verificar se a API está online e dar as boas-vindas
-app.get('/', (req, res) => {
+app.get('/', (req, res, next) => {
+  // Com o front compilado no mesmo serviço, a raiz mostra o site (ver final do arquivo)
+  if (require('fs').existsSync(path.join(process.env.FRONTEND_DIST || path.join(__dirname, '../../Agromundo/dist'), 'index.html'))) return next();
   res.json({
     status: 'success',
     message: 'Bem-vindo ao Backend do Agrostand API',
@@ -84,6 +86,17 @@ app.get('/health', (req, res) => {
 // ==========================================
 // 4. Tratamento de Erros
 // ==========================================
+
+// Hospedagem única (ex: Render): se o front já foi compilado em Agromundo/dist,
+// serve o site no mesmo endereço da API e devolve o index.html para as rotas do React Router.
+const frontDist = process.env.FRONTEND_DIST || path.join(__dirname, '../../Agromundo/dist');
+if (require('fs').existsSync(path.join(frontDist, 'index.html'))) {
+  app.use(express.static(frontDist));
+  app.get('/{*rota}', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/share') || req.path.startsWith('/uploads')) return next();
+    res.sendFile(path.join(frontDist, 'index.html'));
+  });
+}
 
 // Middleware centralizado de tratamento de erros. Deve ser SEMPRE o último a ser registrado
 // Qualquer erro gerado nas rotas ou middlewares anteriores será capturado aqui (RNF12, RS06)
