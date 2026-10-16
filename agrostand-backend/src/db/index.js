@@ -111,19 +111,27 @@ async function ensureRoleAndDatabase(adminUrl) {
 async function initializeDatabase() {
   const adminUrl = process.env.DATABASE_ADMIN_URL;
   if (adminUrl) {
-    const roleName = await ensureRoleAndDatabase(adminUrl);
-    const role = escapeIdentifier(roleName);
+    let roleName = null;
+    try {
+      roleName = await ensureRoleAndDatabase(adminUrl);
+    } catch (err) {
+      // Hospedagens gerenciadas (ex: Render) podem não permitir CREATE ROLE.
+      // Com DB_ROLE_FALLBACK=on a API usa a própria conexão admin (demonstração).
+      if (process.env.DB_ROLE_FALLBACK !== 'on') throw err;
+      console.warn(`Sem permissão para criar a role da API (${err.message}); usando DATABASE_ADMIN_URL.`);
+      process.env.DATABASE_URL = adminUrl;
+    }
 
     const admin = new Client({ connectionString: adminUrl });
     await admin.connect();
     try {
       await admin.query(fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8'));
-      await admin.query(`
-        GRANT USAGE ON SCHEMA public, app TO ${role};
-        GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA app TO ${role};
-        GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${role};
-        REVOKE INSERT, UPDATE, DELETE ON "Categoria" FROM ${role};
-        GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${role};
+      if (roleName) await admin.query(`
+        GRANT USAGE ON SCHEMA public, app TO ${escapeIdentifier(roleName)};
+        GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA app TO ${escapeIdentifier(roleName)};
+        GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${escapeIdentifier(roleName)};
+        REVOKE INSERT, UPDATE, DELETE ON "Categoria" FROM ${escapeIdentifier(roleName)};
+        GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${escapeIdentifier(roleName)};
       `);
 
       const { rows } = await admin.query('SELECT count(*)::int AS total FROM "Categoria"');
